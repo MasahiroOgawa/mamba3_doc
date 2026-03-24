@@ -88,23 +88,23 @@ By the linearity of integration $\int_{0}^{t} - \int_{0}^{s} = \int_{s}^{t}$, we
 
 \paragraph{2.1\quad Discrete Update Rule and Definition of $\bar{\mathbf{b}}_k$.}
 
-We derive the state $h_{d,k}$ at time $t = k\Delta$ with time step~$\Delta$ by splitting the integration range $[0,\,k\Delta]$ into $[0,\,(k{-}1)\Delta]$ and $[(k{-}1)\Delta,\,k\Delta]$:
+We derive the state $h_{k,d}$ at time $t = k\Delta$ with time step~$\Delta$ by splitting the integration range $[0,\,k\Delta]$ into $[0,\,(k{-}1)\Delta]$ and $[(k{-}1)\Delta,\,k\Delta]$:
 \begin{equation}
-  h_{d,k} = \int_{0}^{(k-1)\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,x_d(s)\,ds
+  h_{k,d} = \int_{0}^{(k-1)\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,x_d(s)\,ds
            + \int_{(k-1)\Delta}^{k\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,x_d(s)\,ds
 \end{equation}
 
 We apply the semigroup property $\Phi_d(t,s)=\Phi_d(t,u)\,\Phi_d(u,s)$ to the first term:
 \begin{equation}
-  h_{d,k} = \Phi_d\bigl(k\Delta,(k{-}1)\Delta\bigr)
-  \underbrace{\int_{0}^{(k-1)\Delta}\!\Phi_d\bigl((k{-}1)\Delta,s\bigr)\,\mathbf{b}(s)\,x_d(s)\,ds}_{\displaystyle h_{d,k-1}}
+  h_{k,d} = \Phi_d\bigl(k\Delta,(k{-}1)\Delta\bigr)
+  \underbrace{\int_{0}^{(k-1)\Delta}\!\Phi_d\bigl((k{-}1)\Delta,s\bigr)\,\mathbf{b}(s)\,x_d(s)\,ds}_{\displaystyle h_{k-1,d}}
   + \int_{(k-1)\Delta}^{k\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,x_d(s)\,ds
 \end{equation}
 
 We define the discretization parameters as follows:
 \begin{itemize}
   \item Transition matrix:
-    $\displaystyle\mathbf{A}_{d,k} = \Phi_d\bigl(k\Delta,(k{-}1)\Delta\bigr) = \exp\!\Bigl(\int_{(k-1)\Delta}^{k\Delta}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)$
+    $\displaystyle\mathbf{A}_{k,d} = \Phi_d\bigl(k\Delta,(k{-}1)\Delta\bigr) = \exp\!\Bigl(\int_{(k-1)\Delta}^{k\Delta}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)$
   \item Discretized input projection:
     $\displaystyle\bar{\mathbf{b}}_k = \int_{(k-1)\Delta}^{k\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,ds$
     \quad(assuming $x_d(s)$ is constant within the interval)
@@ -112,9 +112,9 @@ We define the discretization parameters as follows:
 
 Using these, we obtain the discrete update rule:
 \begin{equation}\label{eq:scalar-update}
-  \underbrace{h_{d,k}}_{N\times 1}
-  = \underbrace{\mathbf{A}_{d,k}}_{N\times N}\;\underbrace{h_{d,k-1}}_{N\times 1}
-  + \underbrace{\bar{\mathbf{b}}_k}_{N\times 1}\;\underbrace{x_{d,k}}_{1\times 1}
+  \underbrace{h_{k,d}}_{N\times 1}
+  = \underbrace{\mathbf{A}_{k,d}}_{N\times N}\;\underbrace{h_{k-1,d}}_{N\times 1}
+  + \underbrace{\bar{\mathbf{b}}_k}_{N\times 1}\;\underbrace{x_{k,d}}_{1\times 1}
 \end{equation}
 
 \paragraph{2.2\quad Extension to Matrix Form (All-Channel Integration).}
@@ -122,46 +122,47 @@ Using these, we obtain the discrete update rule:
 We now derive the matrix form (paper equation~11) from the per-channel update~\eqref{eq:scalar-update}.
 
 \medskip\noindent\textbf{Collecting all channels into a matrix.}\quad
-Define the state matrix $\mathbf{H}_k \in \mathbb{C}^{D\times N}$ whose $d$-th row is $h_{d,k}^\top$:
+Define the state matrix $\mathbf{H}_k \in \mathbb{C}^{D\times N}$ whose $d$-th row is $h_{k,d}^\top$:
 \begin{equation}
   \mathbf{H}_k
-  = \begin{pmatrix} h_{1,k}^\top \\ h_{2,k}^\top \\ \vdots \\ h_{D,k}^\top \end{pmatrix}
+  = \begin{pmatrix} h_{k,1}^\top \\ h_{k,2}^\top \\ \vdots \\ h_{k,D}^\top \end{pmatrix}
   \in \mathbb{C}^{D\times N}
 \end{equation}
+Note that the subscript $k$ is a time index (not a dimension index); $\mathbf{H}_k$ collects all $D$ channel states at discrete time step~$k$.
 
 \medskip\noindent\textbf{Rewriting the transition term.}\quad
-Since $\mathbf{A}_{d,k} = \mathrm{diag}(A_{d,k,1},\dots,A_{d,k,N})$ is diagonal, the matrix--vector product reduces to an elementwise product:
+Since $\mathbf{A}_{k,d} = \mathrm{diag}(A_{k,d,1},\dots,A_{k,d,N})$ is diagonal, the matrix--vector product reduces to an elementwise product:
 \begin{equation}
-  \bigl(\mathbf{A}_{d,k}\,h_{d,k-1}\bigr)_n = A_{d,k,n}\cdot h_{d,k-1,n}
+  \bigl(\mathbf{A}_{k,d}\,h_{k-1,d}\bigr)_n = A_{k,d,n}\cdot h_{d,k-1,n}
 \end{equation}
 Transposing to row form, the $d$-th row of the transition term is:
 \begin{equation}
-  \bigl(\mathbf{A}_{d,k}\,h_{d,k-1}\bigr)^\top
-  = \bigl(A_{d,k,1}\,h_{d,k-1,1},\;\dots,\;A_{d,k,N}\,h_{d,k-1,N}\bigr)
+  \bigl(\mathbf{A}_{k,d}\,h_{k-1,d}\bigr)^\top
+  = \bigl(A_{k,d,1}\,h_{d,k-1,1},\;\dots,\;A_{k,d,N}\,h_{d,k-1,N}\bigr)
 \end{equation}
-Define $\mathcal{A}_k \in \mathbb{C}^{D\times N}$ with $(\mathcal{A}_k)_{d,n} = A_{d,k,n}$, i.e.\ the matrix that collects all diagonal entries. Stacking all $D$ rows:
+Define $\mathcal{A}_k \in \mathbb{C}^{D\times N}$ with $(\mathcal{A}_k)_{d,n} = A_{k,d,n}$, i.e.\ the matrix that collects all diagonal entries. Stacking all $D$ rows:
 \begin{equation}
   \begin{pmatrix}
-    (\mathbf{A}_{1,k}\,h_{1,k-1})^\top \\
+    (\mathbf{A}_{k,1}\,h_{k-1,1})^\top \\
     \vdots \\
-    (\mathbf{A}_{D,k}\,h_{D,k-1})^\top
+    (\mathbf{A}_{k,D}\,h_{k-1,D})^\top
   \end{pmatrix}
   = \mathcal{A}_k \odot \mathbf{H}_{k-1}
 \end{equation}
 where $\odot$ denotes the Hadamard (elementwise) product.
 
 \medskip\noindent\textbf{Rewriting the input term.}\quad
-The input contribution for channel~$d$ is the column vector $\bar{\mathbf{b}}_k\,x_{d,k}$. Transposing to row form gives $x_{d,k}\,\bar{\mathbf{b}}_k^\top \in \mathbb{R}^{1\times N}$. Stacking all $D$ rows with $\mathbf{x}_k = (x_{1,k},\dots,x_{D,k})^\top \in \mathbb{R}^{D\times 1}$:
+The input contribution for channel~$d$ is the column vector $\bar{\mathbf{b}}_k\,x_{k,d}$. Transposing to row form gives $x_{k,d}\,\bar{\mathbf{b}}_k^\top \in \mathbb{R}^{1\times N}$. Stacking all $D$ rows with $\mathbf{x}_k = (x_{k,1},\dots,x_{k,D})^\top \in \mathbb{R}^{D\times 1}$:
 \begin{equation}
   \begin{pmatrix}
-    x_{1,k}\,\bar{\mathbf{b}}_k^\top \\
+    x_{k,1}\,\bar{\mathbf{b}}_k^\top \\
     \vdots \\
-    x_{D,k}\,\bar{\mathbf{b}}_k^\top
+    x_{k,D}\,\bar{\mathbf{b}}_k^\top
   \end{pmatrix}
   = \mathbf{x}_k\,\bar{\mathbf{b}}_k^\top
   \in \mathbb{R}^{D\times N}
 \end{equation}
-This is an outer product: the $(d,n)$-entry is $x_{d,k}\,\bar{b}_{k,n}$.
+This is an outer product: the $(d,n)$-entry is $x_{k,d}\,\bar{b}_{k,n}$.
 
 \medskip\noindent\textbf{Combining both terms.}\quad
 Summing the transition and input terms yields the matrix update rule:
@@ -173,14 +174,14 @@ Summing the transition and input terms yields the matrix update rule:
 
 By substituting recursively starting from $h_0 = 0$, the state at any time~$t$ is:
 \begin{equation}
-  h_{d,t} = \sum_{s=0}^{t}\Biggl(\prod_{j=s+1}^{t}\mathbf{A}_{d,j}\Biggr)\bar{\mathbf{b}}_s\,x_{d,s}
+  h_{t,d} = \sum_{s=0}^{t}\Biggl(\prod_{j=s+1}^{t}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_s\,x_{s,d}
 \end{equation}
 
 \subsection*{Step 3: Substitution into the Output Equation and Kernel Extraction}
 
-Substituting into the output $y_{d,t} = \mathbf{c}_t \cdot h_{d,t}$ and expanding componentwise using the properties of diagonal matrices:
+Substituting into the output $y_{t,d} = \mathbf{c}_t \cdot h_{t,d}$ and expanding componentwise using the properties of diagonal matrices:
 \begin{equation}
-  y_{d,t} = \sum_{s=0}^{t}\Biggl[\sum_{n=1}^{N}(c_{t,n}\cdot\bar{b}_{s,n})\prod_{j=s+1}^{t}A_{d,j,n}\Biggr]x_{d,s}
+  y_{t,d} = \sum_{s=0}^{t}\Biggl[\sum_{n=1}^{N}(c_{t,n}\cdot\bar{b}_{s,n})\prod_{j=s+1}^{t}A_{j,d,n}\Biggr]x_{s,d}
 \end{equation}
 
 \subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
@@ -188,7 +189,7 @@ Substituting into the output $y_{d,t} = \mathbf{c}_t \cdot h_{d,t}$ and expandin
 Define:
 \begin{itemize}
   \item Transition kernel $\mathbf{L}\in\mathbb{C}^{L\times L\times D}$:\quad
-    $(t,s,d)$-element $\displaystyle L_{ts,d}=\prod_{j=s+1}^{t}A_{d,j}$
+    $(t,s,d)$-element $\displaystyle L_{ts,d}=\prod_{j=s+1}^{t}A_{j,d}$
   \item Projection kernel $\mathbf{C}\mathbf{B}^\top\in\mathbb{R}^{L\times L}$:\quad
     $(t,s)$-element $(\mathbf{C}\mathbf{B}^\top)_{ts}=\mathbf{c}_t^\top\bar{\mathbf{b}}_s$
 \end{itemize}
