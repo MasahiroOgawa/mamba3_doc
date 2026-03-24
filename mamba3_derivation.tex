@@ -205,26 +205,87 @@ the general formula is:
 
 \subsection*{Step 3: Substitution into the Output Equation and Kernel Extraction}
 
-Substituting into the output $y_{k,d} = \mathbf{c}_k \cdot \mathbf{h}_{k,d}$ and expanding componentwise using the properties of diagonal matrices:
+The output for channel~$d$ at time step~$k$ is the scalar $y_{k,d} \in \mathbb{R}$ defined by
 \begin{equation}
-  y_{k,d} = \sum_{s=0}^{k}\Biggl[\sum_{n=1}^{N}(c_{k,n}\cdot\bar{b}_{s,d,n})\prod_{j=s+1}^{k}A_{j,d,n}\Biggr]x_{s,d}
+  y_{k,d} = \mathbf{c}_k^\top\,\mathbf{h}_{k,d}
+\end{equation}
+where $\mathbf{c}_k \in \mathbb{R}^{N \times 1}$ is the $k$-th row of $\mathbf{C}$ (transposed to a column vector), i.e.\ $\mathbf{c}_k^\top = (\mathbf{C})_{k,:}$.
+
+Substituting the unrolled state~\eqref{eq:unrolled}:
+\begin{equation}
+  y_{k,d}
+  = \mathbf{c}_k^\top \sum_{s=0}^{k}\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
+  = \sum_{s=0}^{k} \mathbf{c}_k^\top\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\;x_{s,d}
+\end{equation}
+
+Now we simplify $\mathbf{c}_k^\top\bigl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\bigr)\bar{\mathbf{b}}_{s,d}$.
+Since each $\mathbf{A}_{j,d}$ is an $N\times N$ diagonal matrix, their product is also diagonal:
+\begin{equation}
+  \prod_{j=s+1}^{k}\mathbf{A}_{j,d}
+  = \mathrm{diag}\!\Biggl(\prod_{j=s+1}^{k}A_{j,d,1},\;\dots,\;\prod_{j=s+1}^{k}A_{j,d,N}\Biggr)
+\end{equation}
+Multiplying a diagonal matrix by a column vector gives componentwise scaling, so:
+\begin{equation}
+  \Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}
+  = \begin{pmatrix}
+      \bar{b}_{s,d,1}\prod_{j=s+1}^{k}A_{j,d,1} \\[3pt]
+      \vdots \\[3pt]
+      \bar{b}_{s,d,N}\prod_{j=s+1}^{k}A_{j,d,N}
+    \end{pmatrix}
+\end{equation}
+Taking the inner product with $\mathbf{c}_k = (c_{k,1},\dots,c_{k,N})^\top$:
+\begin{equation}
+  \mathbf{c}_k^\top\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}
+  = \sum_{n=1}^{N} c_{k,n}\,\bar{b}_{s,d,n}\prod_{j=s+1}^{k}A_{j,d,n}
+\end{equation}
+Substituting back:
+\begin{equation}\label{eq:output-expanded}
+  y_{k,d} = \sum_{s=0}^{k}\Biggl[\sum_{n=1}^{N}\bigl(c_{k,n}\cdot\bar{b}_{s,d,n}\bigr)\prod_{j=s+1}^{k}A_{j,d,n}\Biggr]x_{s,d}
 \end{equation}
 
 \subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
 
+\noindent\textbf{Scalar SSM assumption.}\quad
+In the general case, $A_{j,d,n}$ varies with $n$, so $\prod_{j=s+1}^{k}A_{j,d,n}$ depends on $n$ and the transition kernel would be an $L\times L\times D\times N$ tensor.  Mamba-2/3 uses a \emph{scalar SSM} in which
+\begin{equation}
+  A_{j,d,1} = A_{j,d,2} = \cdots = A_{j,d,N} \;\equiv\; A_{j,d} \in \mathbb{C}
+\end{equation}
+i.e.\ the diagonal matrix $\mathbf{A}_{j,d} = A_{j,d}\,\mathbf{I}_N$ is a scalar times identity.
+Under this assumption, $\prod_{j=s+1}^{k}A_{j,d,n} = \prod_{j=s+1}^{k}A_{j,d}$ for all~$n$, and the output~\eqref{eq:output-expanded} simplifies to
+\begin{equation}
+  y_{k,d}
+  = \sum_{s=0}^{k}\underbrace{\prod_{j=s+1}^{k}A_{j,d}}_{\displaystyle L_{ks,d}}
+    \underbrace{\Biggl(\sum_{n=1}^{N}c_{k,n}\,\bar{b}_{s,d,n}\Biggr)}_{\displaystyle(\mathbf{C}\bar{\mathbf{B}}^\top)_{ks,d}}
+    x_{s,d}
+\end{equation}
+where the product over~$n$ and the sum over~$n$ separate into two independent factors.
+
+\medskip
 Define (for $k,s = 0,\dots,L{-}1$):
 \begin{itemize}
   \item Transition kernel $\mathbf{L}\in\mathbb{C}^{L\times L\times D}$:\quad
-    $(k,s,d)$-element $\displaystyle L_{ks,d}=\prod_{j=s+1}^{k}A_{j,d}$
-  \item Projection kernel $\mathbf{C}\mathbf{B}^\top\in\mathbb{R}^{L\times L}$:\quad
-    $(k,s)$-element $(\mathbf{C}\mathbf{B}^\top)_{ks}=\mathbf{c}_k^\top\bar{\mathbf{b}}_s$
-      \quad(under the Euler approximation $\bar{\mathbf{b}}_{s,d} \approx \bar{\mathbf{b}}_s$)
+    $(k,s,d)$-element $\displaystyle L_{ks,d}=\prod_{j=s+1}^{k}A_{j,d}$ \quad(scalar, since $A_{j,d}$ is independent of~$n$)
+  \item Projection kernel $\mathbf{C}\bar{\mathbf{B}}^\top\in\mathbb{R}^{L\times L\times D}$:\quad
+    $(k,s,d)$-element $(\mathbf{C}\bar{\mathbf{B}}^\top)_{ks,d}=\mathbf{c}_k^\top\bar{\mathbf{b}}_{s,d} = \sum_{n=1}^{N}c_{k,n}\,\bar{b}_{s,d,n}$
 \end{itemize}
-
-Then:
-\begin{equation}\label{eq:main}
-  \boxed{\;\mathbf{Y} = \bigl(\mathbf{L}\odot\mathbf{C}\mathbf{B}^\top\bigr)\,\mathbf{X}\;}
+Both kernels are $L\times L\times D$ tensors, so the Hadamard product is elementwise:
+\begin{equation}
+  \bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d} = L_{ks,d}\cdot(\mathbf{C}\bar{\mathbf{B}}^\top)_{ks,d}
+  \qquad\in\mathbb{C}^{L\times L\times D}
 \end{equation}
+
+\noindent\textbf{Assembling the output.}\quad
+The output element $y_{k,d}\in\mathbb{R}$ is:
+\begin{equation}
+  y_{k,d} = \sum_{s=0}^{L-1}\bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d}\;x_{s,d}
+\end{equation}
+This is a matrix--vector product over index~$s$ for each channel~$d$. Stacking all $D$ channels:
+\begin{equation}\label{eq:main}
+  \boxed{\;\mathbf{Y} = \bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)\,\mathbf{X}\;}
+\end{equation}
+
+\medskip\noindent\textit{Remark.}\quad
+Under the Euler approximation ($\bar{\mathbf{b}}_{s,d}\approx\bar{\mathbf{b}}_s$, independent of~$d$), the projection kernel reduces to $\mathbf{C}\mathbf{B}^\top\in\mathbb{R}^{L\times L}$ and is broadcast along the $D$ axis, recovering the paper's notation $\mathbf{Y}=(\mathbf{L}\odot\mathbf{C}\mathbf{B}^\top)\mathbf{X}$.
 
 \hfill$\blacksquare$
 
