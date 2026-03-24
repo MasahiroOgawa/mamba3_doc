@@ -16,7 +16,7 @@ We derive the output matrix $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \m
 \subsection{Basic Dimensions}
 
 \begin{itemize}
-  \item $L$: Sequence Length
+  \item $T$: Sequence Length
   \item $D$: Number of Input/Output Channels (Model Dimension)
   \item $N$: State Dimension (per channel)
 \end{itemize}
@@ -24,15 +24,15 @@ We derive the output matrix $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \m
 \subsection{Variable Dimension Definitions}
 
 \begin{itemize}
-  \item $\mathbf{X} \in \mathbb{R}^{L \times D}$: Input sequence
-  \item $\mathbf{Y} \in \mathbb{R}^{L \times D}$: Output sequence
+  \item $\mathbf{X} \in \mathbb{R}^{T \times D}$: Input sequence
+  \item $\mathbf{Y} \in \mathbb{R}^{T \times D}$: Output sequence
   \item $\mathbf{h}(t) \in \mathbb{C}^{D \times N}$: State matrix. Each column $\mathbf{h}_d(t) \in \mathbb{C}^{N \times 1}$ is the state vector of channel~$d$.
   \item $\mathbf{A}(t)$: Collection of diagonal components.
     \begin{itemize}
       \item Storage dimension: $\mathbb{C}^{D \times N}$. Each element $A_{d,n}(t)$ is the complex coefficient for the $n$-th state of channel~$d$.
       \item Operational dimension: $\mathbb{C}^{D \times N \times N}$. For each channel~$d$, it acts as an $N \times N$ diagonal matrix $\mathbf{A}_d(t) = \mathrm{diag}(A_{d,1}(t), \dots, A_{d,N}(t))$.
     \end{itemize}
-  \item $\mathbf{B}(t) \in \mathbb{R}^{L \times N}$, $\mathbf{C}(t) \in \mathbb{R}^{L \times N}$: Projection vectors shared across all channels.
+  \item $\mathbf{B}(t) \in \mathbb{R}^{T \times N}$, $\mathbf{C}(t) \in \mathbb{R}^{T \times N}$: Projection vectors shared across all channels.
 \end{itemize}
 
 \section{Proof: Expansion from Continuous Time to Matrix Form}
@@ -246,7 +246,7 @@ Substituting back:
 \subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
 
 \noindent\textbf{Scalar SSM assumption.}\quad
-In the general case, $A_{j,d,n}$ varies with $n$, so $\prod_{j=s+1}^{k}A_{j,d,n}$ depends on $n$ and the transition kernel would be an $L\times L\times D\times N$ tensor.  Mamba-2/3 uses a \emph{scalar SSM} in which
+In the general case, $A_{j,d,n}$ varies with $n$, so $\prod_{j=s+1}^{k}A_{j,d,n}$ depends on $n$ and the transition kernel would be an $T\times T\times D\times N$ tensor.  Mamba-2/3 uses a \emph{scalar SSM} in which
 \begin{equation}
   A_{j,d,1} = A_{j,d,2} = \cdots = A_{j,d,N} \;\equiv\; A_{j,d} \in \mathbb{C}
 \end{equation}
@@ -261,23 +261,23 @@ Under this assumption, $\prod_{j=s+1}^{k}A_{j,d,n} = \prod_{j=s+1}^{k}A_{j,d}$ f
 where the product over~$n$ and the sum over~$n$ separate into two independent factors.
 
 \medskip
-Define (for $k,s = 0,\dots,L{-}1$):
+Define (for $k,s = 0,\dots,T{-}1$):
 \begin{itemize}
-  \item Transition kernel $\mathbf{L}\in\mathbb{C}^{L\times L\times D}$:\quad
+  \item Transition kernel $\mathbf{L}\in\mathbb{C}^{T\times T\times D}$:\quad
     $(k,s,d)$-element $\displaystyle L_{ks,d}=\prod_{j=s+1}^{k}A_{j,d}$ \quad(scalar, since $A_{j,d}$ is independent of~$n$)
-  \item Projection kernel $\mathbf{C}\bar{\mathbf{B}}^\top\in\mathbb{R}^{L\times L\times D}$:\quad
+  \item Projection kernel $\mathbf{C}\bar{\mathbf{B}}^\top\in\mathbb{R}^{T\times T\times D}$:\quad
     $(k,s,d)$-element $(\mathbf{C}\bar{\mathbf{B}}^\top)_{ks,d}=\mathbf{c}_k^\top\bar{\mathbf{b}}_{s,d} = \sum_{n=1}^{N}c_{k,n}\,\bar{b}_{s,d,n}$
 \end{itemize}
-Both kernels are $L\times L\times D$ tensors, so the Hadamard product is elementwise:
+Both kernels are $T\times T\times D$ tensors, so the Hadamard product is elementwise:
 \begin{equation}
   \bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d} = L_{ks,d}\cdot(\mathbf{C}\bar{\mathbf{B}}^\top)_{ks,d}
-  \qquad\in\mathbb{C}^{L\times L\times D}
+  \qquad\in\mathbb{C}^{T\times T\times D}
 \end{equation}
 
 \noindent\textbf{Assembling the output.}\quad
 The output element $y_{k,d}\in\mathbb{R}$ is:
 \begin{equation}
-  y_{k,d} = \sum_{s=0}^{L-1}\bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d}\;x_{s,d}
+  y_{k,d} = \sum_{s=0}^{T-1}\bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d}\;x_{s,d}
 \end{equation}
 This is a matrix--vector product over index~$s$ for each channel~$d$. Stacking all $D$ channels:
 \begin{equation}\label{eq:main}
