@@ -1,0 +1,113 @@
+Mamba-3 論文 式(2)：MIMO SSM の行列形式の導出
+
+Mamba-3における出力行列 $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \mathbf{X}$ の導出を、連続時間系の基礎方程式から次元（Dimensions）を明示しながら一歩ずつ証明します。
+
+1. 定義：次元とパラメータ
+
+1.1 基本次元
+
+$L$: シーケンス長 (Sequence Length)
+
+$D$: 入出力のチャネル数 (Model Dimension / Number of Channels)
+
+$N$: 状態空間の次元 (State Dimension per channel)
+
+1.2 変数の次元定義
+
+$\mathbf{X} \in \mathbb{R}^{L \times D}$: 入力シーケンス
+
+$\mathbf{Y} \in \mathbb{R}^{L \times D}$: 出力シーケンス
+
+$h(t) \in \mathbb{C}^{D \times N}$: 状態行列。各行 $h_d(t) \in \mathbb{C}^{1 \times N}$ がチャネル $d$ の状態ベクトル。
+
+$\mathbf{A}(t)$: 対角成分の集合。
+
+保持次元: $\mathbb{C}^{D \times N}$。各要素 $A_{d,n}(t)$ はチャネル $d$ の第 $n$ 状態の複素係数。
+
+演算次元: 各チャネル $d$ に対して、$N \times N$ の対角行列 $\mathbf{A}_d(t) = \text{diag}(A_{d,1}(t), \dots, \dots, A_{d,N}(t))$ として作用する。
+
+$\mathbf{B}(t) \in \mathbb{R}^{L \times N}$, $\mathbf{C}(t) \in \mathbb{R}^{L \times N}$: 全チャネル共有の投影ベクトル。
+
+2. 証明：連続時間から行列形式への展開
+
+ステップ 1：連続時間解の導出（積分因子法）
+
+各チャネル $d$ における状態 $h_d(t) \in \mathbb{C}^N$（列ベクトル表記）の微分方程式から開始します。
+
+$$\frac{dh_d(t)}{dt} = \mathbf{A}_d(t) h_d(t) + \mathbf{b}(t) x_d(t)$$
+
+※ $\mathbf{A}_d(t) \in \mathbb{C}^{N \times N}$ は対角行列、$\mathbf{b}(t) \in \mathbb{R}^{N \times 1}$、 $x_d(t) \in \mathbb{R}$。
+
+この 1 階線形非斉次微分方程式を解くため、両辺に積分因子 $\exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right)$ を掛けます。
+
+$$\exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right) \left[ \frac{dh_d(t)}{dt} - \mathbf{A}_d(t)h_d(t) \right] = \exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right) \mathbf{b}(t)x_d(t)$$
+
+左辺に積の微分公式 $\frac{d}{dt}(fg) = f'g + fg'$ の逆演算を適用します。
+
+$$\frac{d}{dt} \left[ \exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right) h_d(t) \right] = \exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right) \mathbf{b}(t)x_d(t)$$
+
+初期状態 $h_d(0)=0$ とし、両辺を $0$ から $t$ まで積分します。
+
+$$\exp \left( -\int_{0}^t \mathbf{A}_d(\tau) d\tau \right) h_d(t) - \underbrace{\exp(0)h_d(0)}_{0} = \int_{0}^t \exp \left( -\int_{0}^s \mathbf{A}_d(\tau) d\tau \right) \mathbf{b}(s)x_d(s) ds$$
+
+両辺に左から $\exp \left( \int_{0}^t \mathbf{A}_d(\tau) d\tau \right)$ を掛けます。
+
+$$h_d(t) = \exp \left( \int_{0}^t \mathbf{A}_d(\tau) d\tau \right) \int_{0}^t \exp \left( -\int_{0}^s \mathbf{A}_d(\tau) d\tau \right) \mathbf{b}(s)x_d(s) ds$$
+
+$\mathbf{A}$ が対角行列であるため、指数項を積分の中に入れます。
+
+$$h_d(t) = \int_{0}^t \exp \left( \int_{0}^t \mathbf{A}_d(\tau) d\tau - \int_{0}^s \mathbf{A}_d(\tau) d\tau \right) \mathbf{b}(s)x_d(s) ds$$
+
+積分の線形性 $\int_{0}^t - \int_{0}^s = \int_{s}^t$ により、以下の連続時間一般解が得られます。
+
+$$h_d(t) = \int_{0}^t \underbrace{\exp \left( \int_{s}^t \mathbf{A}_d(\tau) d\tau \right)}_{\Phi_d(t, s)} \mathbf{b}(s)x_d(s) ds \quad [h_d(t) \in \mathbb{C}^N]$$
+
+ステップ 2：離散化と累積積（プロダクト）の導出
+
+2.1 離散更新式と $\bar{\mathbf{b}}_k$ の定義
+
+タイムステップ $\Delta$ における時刻 $t = k\Delta$ の状態 $h_{k,d}$ を、積分範囲 $[0, k\Delta]$ を $[0, (k-1)\Delta]$ と $[(k-1)\Delta, k\Delta]$ に分割して導出します。
+
+$$h_{k,d} = \int_{0}^{(k-1)\Delta} \Phi_d(k\Delta, s) \mathbf{b}(s)x_d(s) ds + \int_{(k-1)\Delta}^{k\Delta} \Phi_d(k\Delta, s) \mathbf{b}(s)x_d(s) ds$$
+
+状態遷移関数の半群性 $\Phi_d(t, s) = \Phi_d(t, u)\Phi_d(u, s)$ を第 1 項に適用します。
+
+$$h_{k,d} = \Phi_d(k\Delta, (k-1)\Delta) \underbrace{\int_{0}^{(k-1)\Delta} \Phi_d((k-1)\Delta, s) \mathbf{b}(s)x_d(s) ds}_{h_{k-1,d}} + \int_{(k-1)\Delta}^{k\Delta} \Phi_d(k\Delta, s) \mathbf{b}(s)x_d(s) ds$$
+
+ここで、離散化パラメータを以下のように定義します。
+
+遷移行列: $\mathbf{A}_{k,d} = \Phi_d(k\Delta, (k-1)\Delta) = \exp \left( \int_{(k-1)\Delta}^{k\Delta} \mathbf{A}_d(\tau) d\tau \right)$
+
+離散化入力投影: $\bar{\mathbf{b}}_k = \int_{(k-1)\Delta}^{k\Delta} \Phi_d(k\Delta, s) \mathbf{b}(s) ds$ （$x_d(s)$ が区間内で一定と仮定）
+
+これを用いて、詳細な離散更新式が得られます。
+
+$$\underbrace{h_{k,d}}_{N \times 1} = \underbrace{\mathbf{A}_{k,d}}_{N \times N} \cdot \underbrace{h_{k-1,d}}_{N \times 1} + \underbrace{\bar{\mathbf{b}}_k}_{N \times 1} \underbrace{x_{k,d}}_{1 \times 1}$$
+
+2.2 行列形式（全チャネル統合）への拡張
+
+全チャネル $D$ を統合した状態行列 $\mathbf{H}_k \in \mathbb{C}^{D \times N}$ の更新は、各対角行列の要素を並べた $\mathcal{A}_k \in \mathbb{C}^{D \times N}$ を用いたHadamard積で表現されます。
+
+$$\mathbf{H}_k = \mathcal{A}_k \odot \mathbf{H}_{k-1} + \mathbf{x}_k \cdot \bar{\mathbf{b}}_k^\top$$
+
+2.3 再帰代入による展開
+
+$h_0 = 0$ から順次代入することで、任意の時刻 $t$ における状態が求まります。
+
+$$h_{t,d} = \sum_{s=0}^t \left( \prod_{j=s+1}^t \mathbf{A}_{j,d} \right) \bar{\mathbf{b}}_s x_{s,d}$$
+
+ステップ 3：出力方程式への代入と核（Kernel）の抽出
+
+出力 $y_{t,d} = \mathbf{c}_t \cdot h_{t,d}$ に代入し、対角行列の性質を用いて成分展開します。
+
+$$y_{t,d} = \sum_{s=0}^t \left[ \sum_{n=1}^N (c_{t,n} \cdot \bar{b}_{s,n}) \cdot \prod_{j=s+1}^t A_{j,d,n} \right] x_{s,d}$$
+
+ステップ 4：行列形式への統合（論文 式2）
+
+遷移核 $\mathbf{L} \in \mathbb{C}^{L \times L \times D}$: $(t, s, d)$ 要素 $L_{ts,d} = \prod_{j=s+1}^t A_{j,d}$
+
+投影核 $\mathbf{CB}^\top \in \mathbb{R}^{L \times L}$: $(t, s)$ 要素 $(\mathbf{CB}^\top)_{ts} = \mathbf{c}_t^\top \bar{\mathbf{b}}_s$
+
+$$\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \mathbf{X}$$
+
+（証明終）
