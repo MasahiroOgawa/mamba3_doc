@@ -86,7 +86,7 @@ By the linearity of integration $\int_{0}^{t} - \int_{0}^{s} = \int_{s}^{t}$, we
 
 \subsection*{Step 2: Discretization and Derivation of the Cumulative Product}
 
-\paragraph{2.1\quad Discrete Update Rule and Definition of $\bar{\mathbf{b}}_k$.}
+\paragraph{2.1\quad Discrete Update Rule and Definition of $\bar{\mathbf{b}}_{k,d}$.}
 
 We derive the state $\mathbf{h}_{k,d}$ at time $t = k\Delta$ with time step~$\Delta$ by splitting the integration range $[0,\,k\Delta]$ into $[0,\,(k{-}1)\Delta]$ and $[(k{-}1)\Delta,\,k\Delta]$:
 \begin{equation}
@@ -106,15 +106,15 @@ We define the discretization parameters as follows:
   \item Transition matrix:
     $\displaystyle\mathbf{A}_{k,d} = \Phi_d\bigl(k\Delta,(k{-}1)\Delta\bigr) = \exp\!\Bigl(\int_{(k-1)\Delta}^{k\Delta}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)$
   \item Discretized input projection:
-    $\displaystyle\bar{\mathbf{b}}_k = \int_{(k-1)\Delta}^{k\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,ds$
-    \quad(assuming $x_d(s)$ is constant within the interval)
+    $\displaystyle\bar{\mathbf{b}}_{k,d} = \int_{(k-1)\Delta}^{k\Delta}\!\Phi_d(k\Delta,s)\,\mathbf{b}(s)\,ds$
+    \quad(assuming $x_d(s)$ is constant within the interval; depends on $d$ through $\Phi_d$)
 \end{itemize}
 
 Using these, we obtain the discrete update rule:
 \begin{equation}\label{eq:scalar-update}
   \underbrace{\mathbf{h}_{k,d}}_{N\times 1}
   \approx \underbrace{\mathbf{A}_{k,d}}_{N\times N}\;\underbrace{\mathbf{h}_{k-1,d}}_{N\times 1}
-  + \underbrace{\bar{\mathbf{b}}_k}_{N\times 1}\;\underbrace{x_{k,d}}_{1\times 1}
+  + \underbrace{\bar{\mathbf{b}}_{k,d}}_{N\times 1}\;\underbrace{x_{k,d}}_{1\times 1}
 \end{equation}
 
 \paragraph{2.2\quad Extension to Matrix Form (All-Channel Integration).}
@@ -152,36 +152,39 @@ Define $\mathcal{A}_k \in \mathbb{C}^{D\times N}$ with $(\mathcal{A}_k)_{d,n} = 
 where $\odot$ denotes the Hadamard (elementwise) product.
 
 \medskip\noindent\textbf{Rewriting the input term.}\quad
-The input contribution for channel~$d$ is the column vector $\bar{\mathbf{b}}_k\,x_{k,d}$. Transposing to row form gives $x_{k,d}\,\bar{\mathbf{b}}_k^\top \in \mathbb{R}^{1\times N}$. Stacking all $D$ rows with $\mathbf{x}_k = (x_{k,1},\dots,x_{k,D})^\top \in \mathbb{R}^{D\times 1}$:
+The input contribution for channel~$d$ is the column vector $\bar{\mathbf{b}}_{k,d}\,x_{k,d}$. Transposing to row form gives $x_{k,d}\,\bar{\mathbf{b}}_{k,d}^\top \in \mathbb{R}^{1\times N}$. Define $\bar{\mathbf{B}}_k \in \mathbb{R}^{D\times N}$ whose $d$-th row is $\bar{\mathbf{b}}_{k,d}^\top$. Stacking all $D$ rows with $\mathbf{x}_k = (x_{k,1},\dots,x_{k,D})^\top \in \mathbb{R}^{D\times 1}$:
 \begin{equation}
   \begin{pmatrix}
-    x_{k,1}\,\bar{\mathbf{b}}_k^\top \\
+    x_{k,1}\,\bar{\mathbf{b}}_{k,1}^\top \\
     \vdots \\
-    x_{k,D}\,\bar{\mathbf{b}}_k^\top
+    x_{k,D}\,\bar{\mathbf{b}}_{k,D}^\top
   \end{pmatrix}
-  = \mathbf{x}_k\,\bar{\mathbf{b}}_k^\top
+  = \mathrm{diag}(\mathbf{x}_k)\,\bar{\mathbf{B}}_k
   \in \mathbb{R}^{D\times N}
 \end{equation}
-This is an outer product: the $(d,n)$-entry is $x_{k,d}\,\bar{b}_{k,n}$.
+The $(d,n)$-entry is $x_{k,d}\,\bar{b}_{k,d,n}$.
+
+\medskip\noindent\textit{Remark.}\quad
+Under Euler discretization ($\bar{\mathbf{b}}_{k,d} \approx \Delta_k\,\mathbf{b}_k$, independent of~$d$), $\bar{\mathbf{B}}_k$ has identical rows and the input term simplifies to the outer product $\mathbf{x}_k\,\bar{\mathbf{b}}_k^\top$ used in the paper.
 
 \medskip\noindent\textbf{Combining both terms.}\quad
 Summing the transition and input terms yields the matrix update rule:
 \begin{equation}\label{eq:matrix-update}
-  \boxed{\;\mathbf{H}_k = \mathcal{A}_k \odot \mathbf{H}_{k-1} + \mathbf{x}_k\,\bar{\mathbf{b}}_k^\top\;}
+  \boxed{\;\mathbf{H}_k = \mathcal{A}_k \odot \mathbf{H}_{k-1} + \mathrm{diag}(\mathbf{x}_k)\,\bar{\mathbf{B}}_k\;}
 \end{equation}
 
 \paragraph{2.3\quad Expansion by Recursive Substitution.}
 
 By substituting recursively starting from $\mathbf{h}_0 = 0$, the state at any time~$t$ is:
 \begin{equation}
-  \mathbf{h}_{t,d} = \sum_{s=0}^{t}\Biggl(\prod_{j=s+1}^{t}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_s\,x_{s,d}
+  \mathbf{h}_{t,d} = \sum_{s=0}^{t}\Biggl(\prod_{j=s+1}^{t}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
 \end{equation}
 
 \subsection*{Step 3: Substitution into the Output Equation and Kernel Extraction}
 
 Substituting into the output $y_{t,d} = \mathbf{c}_t \cdot \mathbf{h}_{t,d}$ and expanding componentwise using the properties of diagonal matrices:
 \begin{equation}
-  y_{t,d} = \sum_{s=0}^{t}\Biggl[\sum_{n=1}^{N}(c_{t,n}\cdot\bar{b}_{s,n})\prod_{j=s+1}^{t}A_{j,d,n}\Biggr]x_{s,d}
+  y_{t,d} = \sum_{s=0}^{t}\Biggl[\sum_{n=1}^{N}(c_{t,n}\cdot\bar{b}_{s,d,n})\prod_{j=s+1}^{t}A_{j,d,n}\Biggr]x_{s,d}
 \end{equation}
 
 \subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
@@ -192,6 +195,7 @@ Define:
     $(t,s,d)$-element $\displaystyle L_{ts,d}=\prod_{j=s+1}^{t}A_{j,d}$
   \item Projection kernel $\mathbf{C}\mathbf{B}^\top\in\mathbb{R}^{L\times L}$:\quad
     $(t,s)$-element $(\mathbf{C}\mathbf{B}^\top)_{ts}=\mathbf{c}_t^\top\bar{\mathbf{b}}_s$
+      \quad(under the Euler approximation $\bar{\mathbf{b}}_{s,d} \approx \bar{\mathbf{b}}_s$)
 \end{itemize}
 
 Then:
