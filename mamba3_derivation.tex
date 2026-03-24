@@ -77,7 +77,8 @@ Multiplying both sides from the left by $\exp\!\bigl(\int_{0}^{t}\mathbf{A}_d(\t
   \int_{0}^{t}\exp\!\Bigl(-\!\int_{0}^{s}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)\,\mathbf{b}(s)\,x_d(s)\,ds
 \end{equation}
 
-Since $\mathbf{A}$ is a diagonal matrix, we can bring the exponential term inside the integral:
+Since $\exp\!\bigl(\int_{0}^{t}\mathbf{A}_d\,d\tau\bigr)$ does not depend on~$s$, we bring it inside the integral by linearity.
+Then, because $\mathbf{A}_d$ is diagonal, $\int_{0}^{t}\mathbf{A}_d\,d\tau$ and $\int_{0}^{s}\mathbf{A}_d\,d\tau$ commute, so we can combine the two matrix exponentials via $\exp(\mathbf{M}_1)\exp(\mathbf{M}_2) = \exp(\mathbf{M}_1 + \mathbf{M}_2)$:
 \begin{equation}
   \mathbf{h}_d(t) = \int_{0}^{t}\exp\!\Bigl(\int_{0}^{t}\!\mathbf{A}_d(\tau)\,d\tau - \int_{0}^{s}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)\,\mathbf{b}(s)\,x_d(s)\,ds
 \end{equation}
