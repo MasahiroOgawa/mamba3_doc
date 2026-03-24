@@ -3,7 +3,7 @@ title: Derivation of All Mamba-3 Equations
 tags: Mamba, SSM, DeepLearning, MachineLearning, Math
 ---
 
-We derive the key equations in the [Mamba-3 paper](https://arxiv.org/abs/2603.15569), starting from the continuous-time state space model and proceeding step by step with explicit dimensions.
+This article derives the key equations (1),(2) in the [Mamba-3 paper](https://arxiv.org/abs/2603.15569) with one goal: **every single step should be easy to follow**. No steps are skipped. I will post the other proof later. Each equation transforms into the next with a clear reason. If you can follow basic calculus and linear algebra, you can follow this entire derivation.
 
 # 1. Definitions: Dimensions and Parameters
 
