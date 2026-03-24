@@ -30,7 +30,7 @@ We derive the output matrix $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \m
   \item $\mathbf{A}(t)$: Collection of diagonal components.
     \begin{itemize}
       \item Storage dimension: $\mathbb{C}^{D \times N}$. Each element $A_{d,n}(t)$ is the complex coefficient for the $n$-th state of channel~$d$.
-      \item Operational dimension: For each channel~$d$, it acts as an $N \times N$ diagonal matrix $\mathbf{A}_d(t) = \mathrm{diag}(A_{d,1}(t), \dots, A_{d,N}(t))$.
+      \item Operational dimension: $\mathbb{C}^{D \times N \times N}$. For each channel~$d$, it acts as an $N \times N$ diagonal matrix $\mathbf{A}_d(t) = \mathrm{diag}(A_{d,1}(t), \dots, A_{d,N}(t))$.
     \end{itemize}
   \item $\mathbf{B}(t) \in \mathbb{R}^{L \times N}$, $\mathbf{C}(t) \in \mathbb{R}^{L \times N}$: Projection vectors shared across all channels.
 \end{itemize}
