@@ -113,7 +113,7 @@ We define the discretization parameters as follows:
 Using these, we obtain the discrete update rule:
 \begin{equation}\label{eq:scalar-update}
   \underbrace{\mathbf{h}_{k,d}}_{N\times 1}
-  = \underbrace{\mathbf{A}_{k,d}}_{N\times N}\;\underbrace{\mathbf{h}_{k-1,d}}_{N\times 1}
+  \approx \underbrace{\mathbf{A}_{k,d}}_{N\times N}\;\underbrace{\mathbf{h}_{k-1,d}}_{N\times 1}
   + \underbrace{\bar{\mathbf{b}}_k}_{N\times 1}\;\underbrace{x_{k,d}}_{1\times 1}
 \end{equation}
 
