@@ -2,14 +2,14 @@
 \usepackage{amsmath,amssymb}
 \usepackage[margin=2.5cm]{geometry}
 
-\title{Mamba-3 Paper Equation~(2):\\Derivation of the Matrix Form of MIMO SSM}
+\title{Derivation of All Mamba-3 Equations}
 \author{}
 \date{}
 
 \begin{document}
 \maketitle
 
-We derive the output matrix $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \mathbf{X}$ in Mamba-3, starting from the fundamental equations of the continuous-time system and proceeding step by step with explicit dimensions.
+We derive the key equations in the Mamba-3 paper, starting from the continuous-time state space model and proceeding step by step with explicit dimensions.
 
 \section{Definitions: Dimensions and Parameters}
 
@@ -35,17 +35,23 @@ We derive the output matrix $\mathbf{Y} = (\mathbf{L} \odot \mathbf{CB}^\top) \m
   \item $\mathbf{B}(t) \in \mathbb{R}^{T \times N}$, $\mathbf{C}(t) \in \mathbb{R}^{T \times N}$: Projection vectors shared across all channels.
 \end{itemize}
 
-\section{Proof: Expansion from Continuous Time to Matrix Form}
+%% ====================================================================
+\section{Derivation of Equation~(1): The State Space Model}
+%% ====================================================================
 
-\subsection*{Step 1: Derivation of the Continuous-Time Solution (Integrating Factor Method)}
-
-We begin with the differential equation for the state $\mathbf{h}_d(t) \in \mathbb{C}^{N \times 1}$ (column vector) of each channel~$d$:
-\begin{equation}
-  \frac{d\mathbf{h}_d(t)}{dt} = \mathbf{A}_d(t)\, h_d(t) + \mathbf{b}(t)\, x_d(t)
+We start from the continuous-time state space model (SSM) for channel~$d$:
+\begin{equation}\label{eq:ode}
+  \frac{d\mathbf{h}_d(t)}{dt} = \mathbf{A}_d(t)\,\mathbf{h}_d(t) + \mathbf{b}(t)\,x_d(t),
+  \qquad
+  y_d(t) = \mathbf{c}(t)^\top\,\mathbf{h}_d(t)
 \end{equation}
-where $\mathbf{A}_d(t) \in \mathbb{C}^{N \times N}$ is a diagonal matrix, $\mathbf{b}(t) \in \mathbb{R}^{N \times 1}$, and $x_d(t) \in \mathbb{R}$.
+where $\mathbf{A}_d(t) \in \mathbb{C}^{N \times N}$ is a diagonal matrix, $\mathbf{b}(t) \in \mathbb{R}^{N \times 1}$, $\mathbf{c}(t) \in \mathbb{R}^{N \times 1}$, and $x_d(t),\,y_d(t) \in \mathbb{R}$.
 
-To solve this first-order linear non-homogeneous differential equation, we multiply both sides by the integrating factor $\exp\!\bigl(-\int_{0}^{t} \mathbf{A}_d(\tau)\,d\tau\bigr)$:
+We solve this ordinary differential equation (ODE), discretize it to obtain the paper's equation~(1): $\mathbf{h}_k = \mathbf{A}_k\,\mathbf{h}_{k-1} + \bar{\mathbf{b}}_k\,x_k$, and extend it to matrix form over all channels.
+
+\subsection{Continuous-Time Solution (Integrating Factor Method)}
+
+To solve the first-order linear non-homogeneous ODE~\eqref{eq:ode}, we multiply both sides by the integrating factor $\exp\!\bigl(-\int_{0}^{t} \mathbf{A}_d(\tau)\,d\tau\bigr)$:
 \begin{equation}
   \exp\!\Bigl(-\!\int_{0}^{t}\!\mathbf{A}_d(\tau)\,d\tau\Bigr)
   \biggl[\frac{d\mathbf{h}_d(t)}{dt} - \mathbf{A}_d(t)\,\mathbf{h}_d(t)\biggr]
@@ -84,9 +90,9 @@ By the linearity of integration $\int_{0}^{t} - \int_{0}^{s} = \int_{s}^{t}$, we
   \qquad\bigl[\mathbf{h}_d(t)\in\mathbb{C}^{N \times 1}\bigr]
 \end{equation}
 
-\subsection*{Step 2: Discretization and Derivation of the Cumulative Product}
+\subsection{Discretization}
 
-\paragraph{2.1\quad Discrete Update Rule and Definition of $\bar{\mathbf{b}}_{k,d}$.}
+\paragraph{Discrete Update Rule and Definition of $\bar{\mathbf{b}}_{k,d}$.}
 
 We derive the state $\mathbf{h}_{k,d}$ at time $t = k\Delta$ with time step~$\Delta$ by splitting the integration range $[0,\,k\Delta]$ into $[0,\,(k{-}1)\Delta]$ and $[(k{-}1)\Delta,\,k\Delta]$:
 \begin{equation}
@@ -117,7 +123,7 @@ Using these, we obtain the discrete update rule:
   + \underbrace{\bar{\mathbf{b}}_{k,d}}_{N\times 1}\;\underbrace{x_{k,d}}_{1\times 1}
 \end{equation}
 
-\paragraph{2.2\quad Extension to Matrix Form (All-Channel Integration).}
+\subsection{Extension to Matrix Form (All-Channel Integration)}
 
 We now derive the matrix form (paper equation~11) from the per-channel update~\eqref{eq:scalar-update}.
 
@@ -173,7 +179,7 @@ Summing the transition and input terms yields the matrix update rule:
   \mathbf{H}_k = \mathcal{A}_k \odot \mathbf{H}_{k-1} + \mathrm{diag}(\mathbf{x}_k)\,\bar{\mathbf{B}}_k
 \end{equation}
 
-\paragraph{2.3\quad Expansion by Recursive Substitution.}
+\subsection{Expansion by Recursive Substitution}
 
 We unroll the recurrence~\eqref{eq:scalar-update} starting from $\mathbf{h}_{0,d} = \mathbf{0}$.
 
@@ -203,15 +209,23 @@ the general formula is:
   \mathbf{h}_{k,d} = \sum_{s=0}^{k}\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
 \end{equation}
 
-\subsection*{Step 3: Substitution into the Output Equation and Kernel Extraction}
+%% ====================================================================
+\section{Derivation of Equation~(2): The Matrix Output Form}
+%% ====================================================================
+
+Using the discrete SSM derived in Section~2, we now derive the matrix output form $\mathbf{Y} = (\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top)\,\mathbf{X}$.
+
+\subsection{Output Equation}
 
 The output for channel~$d$ at time step~$k$ is the scalar $y_{k,d} \in \mathbb{R}$ defined by
-\begin{equation}
+\begin{equation}\label{eq:output}
   y_{k,d} = \mathbf{c}_k^\top\,\mathbf{h}_{k,d}
 \end{equation}
 where $\mathbf{c}_k \in \mathbb{R}^{N \times 1}$ is the $k$-th row of $\mathbf{C}$ (transposed to a column vector), i.e.\ $\mathbf{c}_k^\top = (\mathbf{C})_{k,:}$.
 
-Substituting the unrolled state~\eqref{eq:unrolled}:
+\subsection{Kernel Extraction}
+
+Substituting the unrolled state~\eqref{eq:unrolled} into~\eqref{eq:output}:
 \begin{equation}
   y_{k,d}
   = \mathbf{c}_k^\top \sum_{s=0}^{k}\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
@@ -243,10 +257,9 @@ Substituting back:
   y_{k,d} = \sum_{s=0}^{k}\Biggl[\sum_{n=1}^{N}\bigl(c_{k,n}\cdot\bar{b}_{s,d,n}\bigr)\prod_{j=s+1}^{k}A_{j,d,n}\Biggr]x_{s,d}
 \end{equation}
 
-\subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
+\subsection{Scalar SSM Assumption and Factorization}
 
-\noindent\textbf{Scalar SSM assumption.}\quad
-In the general case, $A_{j,d,n}$ varies with $n$, so $\prod_{j=s+1}^{k}A_{j,d,n}$ depends on $n$ and the transition kernel would be an $T\times T\times D\times N$ tensor.  Mamba-2/3 uses a \emph{scalar SSM} in which
+In the general case, $A_{j,d,n}$ varies with $n$, so $\prod_{j=s+1}^{k}A_{j,d,n}$ depends on $n$ and the transition kernel would be a $T\times T\times D\times N$ tensor.  Mamba-2/3 uses a \emph{scalar SSM} in which
 \begin{equation}
   A_{j,d,1} = A_{j,d,2} = \cdots = A_{j,d,N} \;\equiv\; A_{j,d} \in \mathbb{C}
 \end{equation}
@@ -260,7 +273,8 @@ Under this assumption, $\prod_{j=s+1}^{k}A_{j,d,n} = \prod_{j=s+1}^{k}A_{j,d}$ f
 \end{equation}
 where the product over~$n$ and the sum over~$n$ separate into two independent factors.
 
-\medskip
+\subsection{Matrix Form}
+
 Define (for $k,s = 0,\dots,T{-}1$):
 \begin{itemize}
   \item Transition kernel $\mathbf{L}\in\mathbb{C}^{T\times T\times D}$:\quad
@@ -274,7 +288,6 @@ Both kernels are $T\times T\times D$ tensors, so the Hadamard product is element
   \qquad\in\mathbb{C}^{T\times T\times D}
 \end{equation}
 
-\noindent\textbf{Assembling the output.}\quad
 The output element $y_{k,d}\in\mathbb{R}$ is:
 \begin{equation}
   y_{k,d} = \sum_{s=0}^{T-1}\bigl(\mathbf{L}\odot\mathbf{C}\bar{\mathbf{B}}^\top\bigr)_{ks,d}\;x_{s,d}
