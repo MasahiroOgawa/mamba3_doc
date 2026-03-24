@@ -175,26 +175,49 @@ Summing the transition and input terms yields the matrix update rule:
 
 \paragraph{2.3\quad Expansion by Recursive Substitution.}
 
-By substituting recursively starting from $\mathbf{h}_0 = 0$, the state at any time~$t$ is:
+We unroll the recurrence~\eqref{eq:scalar-update} starting from $\mathbf{h}_{0,d} = \mathbf{0}$.
+
+\medskip\noindent\textbf{Base cases.}\quad
+\begin{align}
+  \mathbf{h}_{0,d} &= \mathbf{0} \notag\\
+  \mathbf{h}_{1,d} &= \mathbf{A}_{1,d}\,\mathbf{h}_{0,d} + \bar{\mathbf{b}}_{1,d}\,x_{1,d}
+                     = \bar{\mathbf{b}}_{1,d}\,x_{1,d} \notag\\
+  \mathbf{h}_{2,d} &= \mathbf{A}_{2,d}\,\mathbf{h}_{1,d} + \bar{\mathbf{b}}_{2,d}\,x_{2,d}
+                     = \mathbf{A}_{2,d}\,\bar{\mathbf{b}}_{1,d}\,x_{1,d}
+                       + \bar{\mathbf{b}}_{2,d}\,x_{2,d} \notag\\
+  \mathbf{h}_{3,d} &= \mathbf{A}_{3,d}\,\mathbf{h}_{2,d} + \bar{\mathbf{b}}_{3,d}\,x_{3,d}
+                     = \mathbf{A}_{3,d}\mathbf{A}_{2,d}\,\bar{\mathbf{b}}_{1,d}\,x_{1,d}
+                       + \mathbf{A}_{3,d}\,\bar{\mathbf{b}}_{2,d}\,x_{2,d}
+                       + \bar{\mathbf{b}}_{3,d}\,x_{3,d}
+\end{align}
+
+\medskip\noindent\textbf{Pattern.}\quad
+Each term indexed by $s$ carries the input $\bar{\mathbf{b}}_{s,d}\,x_{s,d}$ propagated forward through the product of transition matrices from step $s{+}1$ to $k$. Defining this cumulative product as
 \begin{equation}
-  \mathbf{h}_{t,d} = \sum_{s=0}^{t}\Biggl(\prod_{j=s+1}^{t}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
+  \prod_{j=s+1}^{k}\mathbf{A}_{j,d}
+  = \mathbf{A}_{k,d}\,\mathbf{A}_{k-1,d}\cdots\mathbf{A}_{s+1,d}
+  \qquad\text{(equals $\mathbf{I}$ when $s=k$)}
+\end{equation}
+the general formula is:
+\begin{equation}\label{eq:unrolled}
+  \mathbf{h}_{k,d} = \sum_{s=0}^{k}\Biggl(\prod_{j=s+1}^{k}\mathbf{A}_{j,d}\Biggr)\bar{\mathbf{b}}_{s,d}\,x_{s,d}
 \end{equation}
 
 \subsection*{Step 3: Substitution into the Output Equation and Kernel Extraction}
 
-Substituting into the output $y_{t,d} = \mathbf{c}_t \cdot \mathbf{h}_{t,d}$ and expanding componentwise using the properties of diagonal matrices:
+Substituting into the output $y_{k,d} = \mathbf{c}_k \cdot \mathbf{h}_{k,d}$ and expanding componentwise using the properties of diagonal matrices:
 \begin{equation}
-  y_{t,d} = \sum_{s=0}^{t}\Biggl[\sum_{n=1}^{N}(c_{t,n}\cdot\bar{b}_{s,d,n})\prod_{j=s+1}^{t}A_{j,d,n}\Biggr]x_{s,d}
+  y_{k,d} = \sum_{s=0}^{k}\Biggl[\sum_{n=1}^{N}(c_{k,n}\cdot\bar{b}_{s,d,n})\prod_{j=s+1}^{k}A_{j,d,n}\Biggr]x_{s,d}
 \end{equation}
 
 \subsection*{Step 4: Consolidation into Matrix Form (Paper Equation~2)}
 
-Define:
+Define (for $k,s = 0,\dots,L{-}1$):
 \begin{itemize}
   \item Transition kernel $\mathbf{L}\in\mathbb{C}^{L\times L\times D}$:\quad
-    $(t,s,d)$-element $\displaystyle L_{ts,d}=\prod_{j=s+1}^{t}A_{j,d}$
+    $(k,s,d)$-element $\displaystyle L_{ks,d}=\prod_{j=s+1}^{k}A_{j,d}$
   \item Projection kernel $\mathbf{C}\mathbf{B}^\top\in\mathbb{R}^{L\times L}$:\quad
-    $(t,s)$-element $(\mathbf{C}\mathbf{B}^\top)_{ts}=\mathbf{c}_t^\top\bar{\mathbf{b}}_s$
+    $(k,s)$-element $(\mathbf{C}\mathbf{B}^\top)_{ks}=\mathbf{c}_k^\top\bar{\mathbf{b}}_s$
       \quad(under the Euler approximation $\bar{\mathbf{b}}_{s,d} \approx \bar{\mathbf{b}}_s$)
 \end{itemize}
 
