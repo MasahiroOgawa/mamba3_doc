@@ -1,0 +1,112 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{array}
+
+\title{Mamba-3 SSD: Explicit Attention Documentation}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\section{Core Definitions \& Activations}
+
+Before projections, the following mathematical functions and operators are defined:
+
+\begin{itemize}
+  \item \textbf{Softplus:} $\text{Softplus}(x) = \ln(1 + \exp(x))$. This function is applied to the step-size projection to ensure $\Delta_i > 0$, which is a mechanical necessity for the stability of the state-space decay.
+  \item \textbf{SiLU (Swish):} $\text{SiLU}(x) = x \cdot \sigma(x)$. This is used for the value projection $v_i$ to provide non-linear gating.
+  \item \textbf{Hadamard Product ($\odot$):} Element-wise multiplication.
+  \item \textbf{Matrix Dualism:} In the SSD framework, \textbf{Self-Attention} is the parallel matrix representation of the recurrent state evolution.
+\end{itemize}
+
+\section{Parameter Dimensions Reference}
+
+To maintain consistency in your implementation, all variables and learned weight matrices follow these dimensions:
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Variable} & \textbf{Dimension} & \textbf{Definition} \\
+\hline
+$x_i$ & $D \times 1$ & Input feature vector for patch $i$ ($L = T \times H \times W$). \\
+\hline
+$W_B, W_C$ & $N \times D$ & \textbf{Key} and \textbf{Query} projection matrices ($N$ = state dimension). \\
+\hline
+$W_{\Delta}$ & $1 \times D$ & \textbf{Step-size (delta)} projection row vector. \\
+\hline
+$W_V$ & $D \times D$ & \textbf{Value} projection matrix. \\
+\hline
+$W_G$ & $N \times D$ & \textbf{Cross-attention gating} projection matrix. \\
+\hline
+$A$ & $1 \times 1$ & Learned state-space evolution scalar. \\
+\hline
+$h_i$ & $N \times D$ & Hidden state matrix at step $i$. \\
+\hline
+$y_i$ & $D \times 1$ & Final output feature vector. \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Global Self-Attention (Intra-Sequence Context)}
+
+This mechanism allows every patch in the image sequence to interact with every other patch via a symmetric distance decay.
+
+\subsection{Input Projections}
+
+For each patch token $x_i$:
+
+\begin{enumerate}
+  \item \textbf{Key ($B_i$):} $B_i = W_B x_i \in \mathbb{R}^{N \times 1}$
+  \item \textbf{Query ($C_i$):} $C_i = W_C x_i \in \mathbb{R}^{N \times 1}$
+  \item \textbf{Step Size ($\Delta_i$):} $\Delta_i = \text{Softplus}(W_{\Delta} x_i) \in \mathbb{R}^{1 \times 1}$
+  \item \textbf{Value ($v_i$):} $v_i = \text{SiLU}(W_V x_i) \in \mathbb{R}^{D \times 1}$
+\end{enumerate}
+
+\subsection{Interaction Equation}
+
+The output $y_{self, i}$ is the result of the Query $C_i$ interacting with the global weighted sum of all Key-Value pairs:
+
+\begin{equation}
+y_{self, i} = \sum_{j=1}^L \mathcal{L}_{ij} \cdot (C_i^\top B_j) v_j
+\end{equation}
+
+\textbf{Symmetric Distance Decay ($\mathcal{L}_{ij}$):}
+
+\begin{equation}
+\mathcal{L}_{ij} = \exp\left( - \left| \sum_{k=\min(i,j)}^{\max(i,j)} \Delta_k A \right| \right)
+\end{equation}
+
+\section{Cross-Attention (Multi-View/Reference Context)}
+
+Cross-attention facilitates the interaction between the target image sequence and a pre-computed reference view state.
+
+\subsection{Context State Acquisition}
+
+The reference view sequence ($L_{ref}$) is compressed into a static state matrix $h_{ctx} \in \mathbb{R}^{N \times D}$:
+
+\begin{equation}
+h_{ctx} = \sum_{j=1}^{L_{ref}} \left( \prod_{k=j+1}^{L_{ref}} \alpha_{k, ref} \right) B_{j, ref} v_{j, ref}^\top
+\end{equation}
+
+\textit{(Where $\alpha_k = \exp(-\Delta_k A)$)}
+
+\subsection{Interaction Equation}
+
+For each target token $x_{target, i}$, the output $y_{cross, i}$ queries the combined local and reference context:
+
+\begin{equation}
+y_{cross, i} = C_{target, i}^\top \left[ h_{local, i} + (\text{Gate}_i \odot h_{ctx}) \right]
+\end{equation}
+
+\begin{itemize}
+  \item $h_{local, i}$: The current recurrent state of the target sequence.
+  \item $\text{Gate}_i$: $\sigma(W_G x_{target, i}) \in \mathbb{R}^{N \times 1}$, a data-dependent filter for the reference state.
+\end{itemize}
+
+\section*{Implementation Note}
+
+For your goal of surpassing SOTA in 3D reconstruction by March 2026, the use of \textbf{Trapezoidal Discretization} in the $\mathcal{L}_{ij}$ matrix is essential. It ensures that the model captures the fine-grained geometric gradients (surface normals and curvatures) better than the standard Euler-based Mamba-2.
+
+\end{document}
