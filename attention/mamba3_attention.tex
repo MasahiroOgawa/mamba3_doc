@@ -293,6 +293,22 @@ $\prod_{k=j+1}^{t}\alpha_k$) and a two-band matrix
 $\mathrm{diag}(\gamma_0,\dots,\gamma_T) + \mathrm{subdiag}(\beta_1,\dots,\beta_T)$.
 Equations \eqref{eq:rowform}–\eqref{eq:ssd-derived} are unchanged.
 
+\paragraph{Boundary conditions of the $\beta$ band.} The second term in
+\eqref{eq:L3} references $\beta_{j+1}$. For the left endpoint, the
+recurrence \eqref{eq:rec3} at $t=1$ uses $\beta_1 \bm{B}_0\bm{x}_0$
+with $\bm{B}_0, \bm{x}_0$ out of range; we therefore adopt the
+convention $\beta_1 := 0$, or equivalently drop this term when
+$t=1$. Consistently, $\beta_1$ never appears in \eqref{eq:L3}: the
+second term at $j=0$ would need $\beta_1$, but $j\ge 1$ by indexing.
+For the right endpoint, at $j=t$ the expression $\beta_{j+1}=\beta_{t+1}$
+is undefined; we set $\beta_{T+1} := 0$ so the second term vanishes
+at $j=t$, leaving $L_{tt} = \gamma_t$ as expected. Any implementation
+that pads $\beta$ with zeros on both ends and builds the second band
+only for the strictly lower triangle ($j<t$) honours both conventions
+automatically. An off-by-one in this shift is silently masked by the
+test $\lambda_t\equiv 1$ (which zeroes $\beta$ identically) and must
+therefore be caught by an independent test with $\lambda_t \in (0,1)$.
+
 %% ================================================================
 \section{Self-Attention via Mamba-3}
 \label{sec:self}
@@ -481,6 +497,36 @@ $\bm{Y} = \mathrm{softmax}(\bm{C}^q\bm{B}^{kv\,\top})\,\bm{V}^{kv}$:
 elementwise, structured, learned mask. With the trivial mask
 $L^{\text{cross}}_{ij}\equiv 1$ we obtain ordinary linear cross-
 attention $\bm{C}^q\bm{B}^{kv\,\top}\bm{V}^{kv}$.
+
+\paragraph{End-of-sequence bias in $\bm{L}^{\text{cross}}$.} Note that
+\eqref{eq:Lcross} does not depend on $i$: every query row is the same
+column-decay profile. Concretely, $L^{\text{cross}}_{i,T_{kv}}=\gamma_{T_{kv}}$
+while $L^{\text{cross}}_{i,1}=\gamma_1\prod_{k=2}^{T_{kv}}\alpha_k$ is
+exponentially small once $T_{kv}$ is large. This encodes a strong
+\emph{recency bias toward the end of the $kv$ sequence}: every query
+already prefers the last $kv$ tokens before any data-dependent
+similarity $\bm{C}^q_i{}^\top\bm{B}^{kv}_j$ is applied. This is the
+right inductive bias when the $kv$ sequence has a natural causal order
+(decoder-style cross-attention), but it is arbitrary when the $kv$
+sequence is a permutation-invariant set — most notably, when it comes
+from an image patch grid. The bias becomes the order chosen by the
+raster scan.
+
+\paragraph{Bidirectional cross-attention for permutation-invariant $kv$.}
+When the $kv$ stream has no preferred order, replace
+$\bm{L}^{\text{cross}}$ by the symmetrised mask
+\begin{equation}\label{eq:Lcross-bi}
+  L^{\text{cross},\leftrightarrow}_{ij}
+     \;=\; \gamma_j\Bigl[\prod_{k=j+1}^{T_{kv}}\alpha_k
+                         \;+\; \prod_{k=1}^{j-1}\alpha_k\Bigr],
+\end{equation}
+which is obtained by summing \eqref{eq:Lcross} with its reverse-order
+counterpart, analogously to \eqref{eq:bidi2}. The two products coincide
+at the centre of the $kv$ sequence and decay symmetrically toward both
+endpoints, eliminating the raster-order preference while preserving the
+linear-complexity structure. For images this is the natural cross-
+attention mask to pair with the bidirectional self-attention of
+Section~\ref{sec:bidi}.
 
 \subsection{Which variant to use}
 
