@@ -16,7 +16,7 @@ This note derives, step by step, how the Mamba-3 state space model
 (SSM) can be used as a drop-in replacement for both self-attention and
 cross-attention, and how the resulting attention blocks are assembled
 into an image model. We follow the notation of the Mamba-3 paper
-(\texttt{original\_paper/mamba3.pdf}) so every equation can be
+\cite{mamba3} so every equation can be
 checked against the source. The guiding principle is that every
 algebraic move is shown with its justification. A reader who knows
 matrix multiplication and elementary calculus should be able to follow
@@ -30,7 +30,7 @@ the whole note without guessing.
 %% ================================================================
 
 We summarize the symbols used throughout. The names match
-\texttt{mamba3.pdf}, Section~2 and Section~3.
+\cite{mamba3}, Section~2 and Section~3.
 
 \subsection{Sizes}
 
@@ -77,7 +77,7 @@ The value projection that we will feed into the SSM is
 \subsection{Recurrence, parallel form, and decay factors}
 
 Mamba-3 uses the \emph{exponential-trapezoidal} discrete recurrence of
-\texttt{mamba3.pdf} eq.~(5)–(6):
+\cite{mamba3} eq.~(5)–(6):
 \begin{equation}\label{eq:rec3}
   \bm{h}_t = \alpha_t\,\bm{h}_{t-1}
             + \beta_t\,\bm{B}_{t-1}\bm{x}_{t-1}
@@ -100,8 +100,8 @@ Setting $\lambda_t \equiv 1$ recovers Mamba-2's two-term recurrence
   \qquad
   \bm{y}_t = \bm{C}_t^\top\,\bm{h}_t,
 \end{equation}
-which is \texttt{mamba3.pdf} eq.~(1). Mamba-3's \emph{parallel} form
-(\texttt{mamba3.pdf} eq.~(2)) reads
+which is \cite{mamba3} eq.~(1). Mamba-3's \emph{parallel} form
+(\cite{mamba3} eq.~(2)) reads
 \begin{equation}\label{eq:ssd}
   \bm{Y} = \bigl(\bm{L}\odot\bm{C}\bm{B}^\top\bigr)\bm{X},
 \end{equation}
@@ -221,7 +221,7 @@ Equivalently,
      \prod_{k=2}^{T}\alpha_k & \cdots & \alpha_T & 1
   \end{bmatrix}\cdot\mathrm{diag}(\gamma_1,\dots,\gamma_T),
 \end{equation}
-which is the Mamba-2 mask of \texttt{mamba3.pdf} eq.~(3). Using
+which is the Mamba-2 mask of \cite{mamba3} eq.~(3). Using
 \eqref{eq:yout-L} row by row,
 \begin{equation}\label{eq:rowform}
   \bm{y}_t \;=\; \sum_{j=1}^{T} L_{tj}\,\bigl(\bm{C}_t^\top \bm{B}_j\bigr)\,\bm{x}_j
@@ -232,7 +232,7 @@ which is the Mamba-2 mask of \texttt{mamba3.pdf} eq.~(3). Using
 \begin{equation}\label{eq:ssd-derived}
   \boxed{\;\bm{Y} \;=\; \bigl(\bm{L}\odot \bm{C}\bm{B}^\top\bigr)\bm{X}.\;}
 \end{equation}
-This is exactly \eqref{eq:ssd} (\texttt{mamba3.pdf} eq.~(2)).
+This is exactly \eqref{eq:ssd} (\cite{mamba3} eq.~(2)).
 
 \subsection{Reading the SSD identity as linear attention}
 
@@ -287,7 +287,7 @@ obtains
             \quad \text{for } j\le t,
 \end{equation}
 with the usual empty-product convention. In matrix form this is
-\texttt{mamba3.pdf} eq.~(7): $\bm{L}$ is the product of a
+\cite{mamba3} eq.~(7): $\bm{L}$ is the product of a
 1-semiseparable matrix (whose $(t,j)$ entry is
 $\prod_{k=j+1}^{t}\alpha_k$) and a two-band matrix
 $\mathrm{diag}(\gamma_0,\dots,\gamma_T) + \mathrm{subdiag}(\beta_1,\dots,\beta_T)$.
@@ -330,7 +330,7 @@ For each $t\in\{1,\dots,T\}$ compute
   \bm{v}_t &= \mathrm{SiLU}(\bm{W}_V\,\bm{x}_t)         & &\text{(value)}
 \end{align}
 Form $\alpha_t,\beta_t,\gamma_t$ from \eqref{eq:abc}. Optionally apply
-\textbf{BCNorm} (RMSNorm on $\bm{B}_t,\bm{C}_t$; \texttt{mamba3.pdf}
+\textbf{BCNorm} (RMSNorm on $\bm{B}_t,\bm{C}_t$; \cite{mamba3}
 \S 3.4) and learnable channel-wise biases $\bm{b}_B, \bm{b}_C$ before
 using them.
 
@@ -362,7 +362,7 @@ matrix of $2{\times}2$ rotations
   \qquad
   R(\phi) = \begin{bmatrix}\cos\phi & -\sin\phi\\ \sin\phi & \cos\phi\end{bmatrix},
 \end{equation}
-and Proposition~4 of \texttt{mamba3.pdf} shows that this is equivalent
+and Proposition~4 of \cite{mamba3} shows that this is equivalent
 to applying data-dependent rotary embeddings to $\bm{B}$ and $\bm{C}$.
 Writing $\bm{R}_{\le t} := \prod_{i=0}^{t}\bm{R}_i^\top$, the complex
 recurrence is
@@ -391,7 +391,7 @@ rather than fixed to $10000^{-2i/N}$.
 
 \subsection{MIMO extension}\label{sec:mimo}
 
-Mamba-3's MIMO variant (\texttt{mamba3.pdf} \S 3.3, eqs.~(12)–(14))
+Mamba-3's MIMO variant (\cite{mamba3} \S 3.3, eqs.~(12)–(14))
 stacks $R$ parallel SSMs that share the scalar gates $\alpha_t,\Delta_t$
 but carry independent $\bm{B}_t^{(j)},\bm{C}_t^{(i)},\bm{x}_t^{(j)}$.
 The head-level output is
@@ -662,7 +662,7 @@ images is:
   \item Compute per-token $\bm{B}_t,\bm{C}_t,\Delta_t,A_t,\lambda_t,\bm{v}_t$
         via \eqref{eq:projB}–\eqref{eq:projV}.
   \item Apply BCNorm and add learnable biases $\bm{b}_B,\bm{b}_C$
-        (\texttt{mamba3.pdf}~\S 3.4).
+        (\cite{mamba3}~\S 3.4).
   \item Apply 2-D RoPE: $\bm{B}_t\leftarrow \bm{R}_{\le t}\bm{B}_t$,
         $\bm{C}_t\leftarrow \bm{R}_{\le t}\bm{C}_t$
         with $\bm{R}$ from \eqref{eq:rope2d}.
@@ -676,13 +676,13 @@ images is:
         $\bm{Y}^{\text{self}}\in\mathbb{R}^{L\times D}$.
   \item Apply the usual post-processing (output projection +
         SwiGLU MLP block + residual), exactly as in a Mamba-3 /
-        Llama block (\texttt{mamba3.pdf}~Fig.~2).
+        Llama block (\cite{mamba3}~Fig.~2).
 \end{enumerate}
 
 \subsection{Multi-view cross-attention for 3-D applications}
 \label{sec:multiview}
 
-For multi-view inputs (e.g.\ \texttt{depthAnything3.pdf}, Fig.~2),
+For multi-view inputs (e.g.\ \cite{depthanything3}, Fig.~2),
 stack the tokens of $N_v$ views into
 $\bm{X}\in\mathbb{R}^{N_v L \times D}$. Let $V(i)\in\{1,\dots,N_v\}$
 denote the view index of token $i$.
@@ -707,7 +707,7 @@ first'' order). The output is
   \bm{Y}^{\text{cv}} \;=\; \bigl(\bm{L}^{\text{cv}}\odot\bm{C}\bm{B}^\top\bigr)\bm{V}.
 \end{equation}
 Alternating within-view and cross-view layers realizes the same
-design as \texttt{depthAnything3.pdf} Fig.~2 (``within-view
+design as \cite{depthanything3} Fig.~2 (``within-view
 self-attention'' and ``cross-view self-attention''), but with softmax
 attention replaced by the Mamba-3 SSD kernel, inheriting its linear
 complexity in the token count.
@@ -758,5 +758,8 @@ cross vs multi-view), and (ii) which structured mask $\bm{L}$ is used
 exponential-trapezoidal rule \eqref{eq:L3} and RoPE trick
 \eqref{eq:complex-rec} then give the mask and the query/key its final,
 expressive form.
+
+\bibliographystyle{plain}
+\bibliography{references}
 
 \end{document}
