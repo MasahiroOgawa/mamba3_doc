@@ -80,8 +80,46 @@ guarantees $A_t < 0$, which is what the discretization in
 The value projection that we will feed into the SSM is
 \begin{equation}\label{eq:projV}
   \bm{v}_t = \mathrm{SiLU}(\bm{W}_V\,\bm{x}_t),
-  \qquad \bm{W}_V \in \mathbb{R}^{D\times D}.
+  \qquad \bm{W}_V \in \mathbb{R}^{D\times D},
 \end{equation}
+where $\mathrm{SiLU}$ (a.k.a.\ Swish) is the smooth, self-gated activation
+\begin{equation}\label{eq:silu}
+  \mathrm{SiLU}(z) := z\,\sigma(z) = \frac{z}{1 + e^{-z}},
+  \qquad
+  \sigma(z) := \frac{1}{1 + e^{-z}},
+\end{equation}
+applied element-wise to the vector $\bm{W}_V\bm{x}_t \in \mathbb{R}^{D}$.
+
+\subsection{RMSNorm and BCNorm}
+\label{sec:bcnorm}
+
+Mamba-3 normalizes the key/query projections $\bm{B}_t,\bm{C}_t$ before
+using them in the SSD kernel. The underlying primitive is
+\emph{RMSNorm} \cite{rmsnorm}, which rescales a vector by its
+root-mean-square (no mean subtraction, unlike LayerNorm):
+\begin{equation}\label{eq:rmsnorm}
+  \mathrm{RMSNorm}(\bm{u}) := \frac{\bm{u}}{\sqrt{\tfrac{1}{N}\sum_{i=1}^{N} u_i^{2} + \varepsilon}}\;\odot\;\bm{g},
+  \qquad \bm{u}\in\mathbb{R}^{N},
+\end{equation}
+where $\bm{g}\in\mathbb{R}^{N}$ is a learnable per-channel gain,
+$\varepsilon>0$ is a small constant, and $\odot$ is the Hadamard
+product. The output has unit RMS up to the learned gain, which
+stabilizes the inner products $\bm{C}_i^\top\bm{B}_j$ that appear in
+\eqref{eq:ssd}.
+
+\emph{BCNorm} (\cite{mamba3} \S 3.4) is simply RMSNorm applied
+independently to $\bm{B}_t$ and $\bm{C}_t$, followed by a learnable
+channel-wise bias:
+\begin{equation}\label{eq:bcnorm}
+  \bm{B}_t \leftarrow \mathrm{RMSNorm}(\bm{B}_t) + \bm{b}_B,
+  \qquad
+  \bm{C}_t \leftarrow \mathrm{RMSNorm}(\bm{C}_t) + \bm{b}_C,
+  \qquad \bm{b}_B,\bm{b}_C \in \mathbb{R}^{N}.
+\end{equation}
+We will write ``apply BCNorm'' as shorthand for the substitution
+\eqref{eq:bcnorm}; each occurrence of $\bm{B}_t,\bm{C}_t$ in later
+equations is understood to be the post-BCNorm version when the
+algorithm calls for it.
 
 \subsection{Recurrence, parallel form, and decay factors}
 
