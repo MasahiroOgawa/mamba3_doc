@@ -68,6 +68,15 @@ In terms of an input token $\bm{x}_t$, the learned projections are
   A_t            &= -\mathrm{Softplus}(\bm{w}_A^\top \bm{x}_t)
                                          & \bm{w}_A &\in \mathbb{R}^{D} \text{ (optional data-dep.)}. \label{eq:projA}
 \end{align}
+Here $\mathrm{Softplus}$ is the smooth, strictly positive activation
+\begin{equation}\label{eq:softplus}
+  \mathrm{Softplus}(z) := \log\bigl(1 + e^{z}\bigr),
+  \qquad \mathrm{Softplus}:\mathbb{R}\to\mathbb{R}_{>0},
+\end{equation}
+so \eqref{eq:projD} guarantees $\Delta_t > 0$ and \eqref{eq:projA}
+guarantees $A_t < 0$, which is what the discretization in
+\eqref{eq:abc} requires for $\alpha_t = e^{\Delta_t A_t} \in (0,1)$.
+
 The value projection that we will feed into the SSM is
 \begin{equation}\label{eq:projV}
   \bm{v}_t = \mathrm{SiLU}(\bm{W}_V\,\bm{x}_t),
